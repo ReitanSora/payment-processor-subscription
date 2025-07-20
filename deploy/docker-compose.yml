@@ -2,16 +2,18 @@ services:
   payment-processor-subscription:
     image: ghcr.io/reitansora/payment-processor-subscription:latest
     container_name: payment-processor-subscription
+    restart: unless-stopped
     env_file:
       - .env
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     networks:
       - webnet
 
   nginx:
     image: nginx:stable-alpine
     container_name: nginx
+    restart: unless-stopped
     depends_on:
       - payment-processor-subscription
     ports:
