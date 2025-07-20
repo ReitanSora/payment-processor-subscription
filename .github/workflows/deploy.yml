@@ -1,0 +1,70 @@
+name: CI/CD NestJS → EC2
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: reitansora
+  IMAGE_NAME: payment-processor-subscription
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install & build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Docker login to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login $REGISTRY -u $OWNER --password-stdin
+
+      - name: Build & push image
+        run: |
+          docker build -t $REGISTRY/$OWNER/$IMAGE_NAME:latest .
+          docker push    $REGISTRY/$OWNER/$IMAGE_NAME:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Copy Compose & Nginx to EC2
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          source: |
+            deploy/docker-compose.yml
+            deploy/nginx.conf
+            .env
+          target: /home/ubuntu/app/
+
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+            sudo rm -rf /home/ubuntu/app/nginx
+            sudo mkdir -p /home/ubuntu/app/nginx
+            sudo mv /home/ubuntu/app/nginx.conf /home/ubuntu/app/nginx/nginx.conf
+
+            cd /home/ubuntu/app
+            docker compose down || true
+            docker compose pull
+            docker compose up -d --force-recreate --remove-orphans
