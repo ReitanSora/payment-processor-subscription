@@ -5,6 +5,7 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { SubscriptionEntity } from './entities/subscription.entity';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class PaymentsService {
