@@ -55,10 +55,7 @@ jobs:
           host: ${{ secrets.EC2_PUBLIC_DNS }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: |
-            deploy/docker-compose.yml
-            deploy/nginx.conf
-            .env
+          source:   "deploy/docker-compose.yml,deploy/nginx.conf,.env"
           target: /home/ubuntu/app/
 
       - name: Deploy on EC2
