@@ -1,6 +1,7 @@
 services:
   payment-processor-subscription:
     image: ghcr.io/reitansora/payment-processor-subscription:latest
+    container_name: payment-processor-subscription
     env_file:
       - .env
     ports:
@@ -10,6 +11,7 @@ services:
 
   nginx:
     image: nginx:stable-alpine
+    container_name: nginx
     depends_on:
       - payment-processor-subscription
     ports:
