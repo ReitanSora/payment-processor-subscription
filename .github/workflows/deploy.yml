@@ -86,6 +86,6 @@ jobs:
             EOF
 
             cd /home/ubuntu/app
-            docker compose down || true
-            docker compose pull
-            docker compose up -d --force-recreate --remove-orphans
+            sudo docker compose down || true
+            sudo docker compose pull
+            sudo docker compose up -d --force-recreate --remove-orphans
