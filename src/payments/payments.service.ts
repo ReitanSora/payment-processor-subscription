@@ -1,42 +1,24 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as paypal from '@paypal/checkout-server-sdk';
 import { HttpService } from '@nestjs/axios';
-import { firstValueFrom, lastValueFrom } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
-import { PayPalClient } from '../config/paypal.config';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
-import { PaymentEntity } from './entities/payment.entity';
 import { SubscriptionEntity } from './entities/subscription.entity';
 
 @Injectable()
 export class PaymentsService {
-  private readonly logger = new Logger(PaymentsService.name);
   private readonly paypalBase: string;
-  private readonly usersUrl: string;
-  private readonly invoicesUrl: string;
 
   constructor(
-    private paypalClient: PayPalClient,
     private http: HttpService,
     private config: ConfigService,
-    @InjectRepository(PaymentEntity)
-    private paymentRepo: Repository<PaymentEntity>,
     @InjectRepository(SubscriptionEntity)
     private subscriptionRepo: Repository<SubscriptionEntity>,
   ) {
-    this.paypalBase =
-      this.config.get('PAYPAL_MODE') === 'live'
-        ? 'https://api-m.paypal.com'
-        : 'https://api-m.sandbox.paypal.com';
-    this.usersUrl = this.config.get<string>(
-      'USERS_MANAGEMENT_UPDATE_PLAN_URL',
-    )!;
-    this.invoicesUrl = this.config.get<string>('INVOICES_SERVICE_URL')!;
+    this.paypalBase = 'https://api-m.sandbox.paypal.com';
   }
 
-  // — Create a recurring SUBSCRIPTION —
   async createSubscription(dto: CreateSubscriptionDto) {
     if (dto.planName.toUpperCase() === 'NONE') {
       const freeSub = this.subscriptionRepo.create({
@@ -51,7 +33,7 @@ export class PaymentsService {
     const clientId = this.config.get<string>('PAYPAL_CLIENT_ID')!;
     const clientSecret = this.config.get<string>('PAYPAL_CLIENT_SECRET')!;
     const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-    // 1) Obtén un token OAuth2
+
     const tokenResp = await lastValueFrom(
       this.http.post<{ access_token: string }>(
         `${this.paypalBase}/v1/oauth2/token`,
@@ -89,7 +71,6 @@ export class PaymentsService {
       }),
     );
 
-    // 3) Persiste en DB
     const result = subResp.data;
     const sub = this.subscriptionRepo.create({
       userId: dto.userId,
@@ -102,7 +83,6 @@ export class PaymentsService {
     });
     await this.subscriptionRepo.save(sub);
 
-    // 4) Devuelve al cliente el enlace de aprobación
     const approveLink = result.links.find((l) => l.rel === 'approve')?.href;
     return { subscriptionId: result.id, status: result.status, approveLink };
   }

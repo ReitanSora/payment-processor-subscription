@@ -55,8 +55,8 @@ jobs:
           host: ${{ secrets.EC2_PUBLIC_DNS }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "deploy/docker-compose.yml,deploy/nginx.conf,.env"
-          target: "/home/ubuntu/app/"
+          source: 'deploy/docker-compose.yml,deploy/nginx.conf,.env'
+          target: '/home/ubuntu/app/'
           strip_components: 1
 
       - name: Deploy on EC2
@@ -69,6 +69,21 @@ jobs:
             sudo rm -rf /home/ubuntu/app/nginx
             sudo mkdir -p /home/ubuntu/app/nginx
             sudo mv /home/ubuntu/app/nginx.conf /home/ubuntu/app/nginx/nginx.conf
+
+            sudo cat > /home/ubuntu/app/.env <<EOF
+            DB_HOST=${{ secrets.DB_URL }}
+            DB_PORT=${{ secrets.DB_PORT }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASS=${{ secrets.DB_PASS }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            PAYPAL_CLIENT_ID=${{ secrets.PAYPAL_CLIENT_ID }}
+            PAYPAL_CLIENT_SECRET=${{ secrets.PAYPAL_CLIENT_SECRET }}
+            PAYMENT_SERVICE_CANCEL_URL=${{ secrets.PAYMENT_SERVICE_CANCEL_URL }}
+            PAYMENT_SERVICE_COMPLETE_URL=${{ secrets.PAYMENT_SERVICE_COMPLETE_URL }}
+            PAYPAL_PLAN_BASIC=${{ secrets.PAYPAL_PLAN_BASIC }}
+            PAYPAL_PLAN_STANDARD=${{ secrets.PAYPAL_PLAN_STANDARD }}
+            PAYPAL_PLAN_PREMIUM=${{ secrets.PAYPAL_PLAN_PREMIUM }}
+            EOF
 
             cd /home/ubuntu/app
             docker compose down || true
