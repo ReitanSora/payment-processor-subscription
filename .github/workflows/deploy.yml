@@ -55,8 +55,9 @@ jobs:
           host: ${{ secrets.EC2_PUBLIC_DNS }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source:   "deploy/docker-compose.yml,deploy/nginx.conf,.env"
-          target: /home/ubuntu/app/
+          source: "deploy/docker-compose.yml,deploy/nginx.conf,.env"
+          target: "/home/ubuntu/app/"
+          strip_components: 1
 
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v0.1.5
